@@ -1,0 +1,36 @@
+import Action.txt as Action
+
+Behavior 发现灾民并广播位置(n):
+	@topic: targetLocation_pipe, searchedCount_pipe
+	@action: getGPS, chooseAdest, takePicture, CnnRecognize
+	@init:
+	@goal:	# 找到所有灾民
+		request searchedCnt from searchedCount_pipe
+		searchedCnt == n
+	@routine:
+		dest = chooseAdest(),
+		flyTo(dest)
+		||  
+		img = takePicture(), 
+		result = CnnRecognize(img),
+		if result == True:
+			tarLoc = getGPS() 
+			publish tarLoc to targetLocation_pipe
+			request searchedCnt from searchedCount_pipe
+			searchedCnt++
+			publish searchedCnt to searchedCount_pipe
+
+Behavior 前往解救灾民(dest):
+	@topic: rescuedCount_pipe
+	@action: getGPS, flyTo, pickUp, returnToHome
+	@init:
+	@goal 	# 解救一个灾民
+		getGPS() == getHomeLoc()
+	@routine:
+		flyTo(dest)		# 神经网络模型
+		pickUp()		# 既定动作
+		returnToHome()	# 神经网络模型
+		request rescuedCount_pipe from rescuedCnt
+		rescuedCnt++
+		publish rescuedCnt to rescuedCount_pipe
+

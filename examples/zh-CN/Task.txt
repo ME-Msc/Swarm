@@ -1,0 +1,47 @@
+import Behavior.txt as Behavior
+
+Task 地震救灾(uavCountPerType:{search_uav:m1, resuce_uav:m2}, targets:n):
+	@uavTypes:search_uav, resuce_uav
+	@topic:rescuedCount_pipe, targetLocation_pipe
+	@init:
+		rescuedCnt = 0
+		publish rescuedCnt to rescuedCount_pipe
+	@goal: # 解救n个人
+		request rescuedCnt from rescuedCount_pipe
+		rescuedCnt == n
+	@subtask:搜寻灾民, 解救灾民
+	@behavior:前往解救灾民
+	@routine:
+		搜寻灾民({search_uav:m1}, n)		# 子任务
+		||
+		解救灾民({resuce_uav:m2}, n)		# 子任务
+
+Task 搜寻灾民(uavCountPerType:{search_uav:m3}, targets:n)
+	@uavTypes:search_uav
+	@topic:searchedCount_pipe, rescuedCount_pipe, targetLocation_pipe
+	@init: 
+		searchedCnt = 0
+		publish searchedCnt to searchedCount_pipe
+	@goal:	# 找到n个人
+		request searchedCnt from searchedCount_pipe
+		searchedCnt == n
+	@behavior:发现灾民并广播位置
+	@routine:
+		each search_uav[0:m3]:		# each多线程调度单机行为，执行完行为的无人机放回each队列中
+			发现灾民并广播位置(n)
+
+Task 解救灾民({rescue_uav:m1}, targets:n):
+	@uavTypes: rescue_uav
+	@topic: rescuedCount_pipe
+	@init:
+	@goal:
+		request rescuedCnt from rescuedCount_pipe
+		rescuedCnt == n
+	@routine:
+		order rescue_uav[0:m1]:
+			subscribe tarLoc from targetLocation_pipe
+			前往解救灾民(tarLoc)		# 行为
+
+main():
+	UAV search_uav, rescue_uav
+	地震救灾({search_uav:5, rescue_uav:10}, 20)			# 救20人，5无人侦察机，10无人直升机test
