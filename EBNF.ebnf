@@ -1,124 +1,94 @@
-/* Basic component */
-number ::= "0" | ( [1-9] [0-9]* )
+main ::= "main():" agent_declaration+ function_call*
 
-variant ::= [a-zA-Z] ( [a-zA-Z0-9] | "_" )*
+/* Declaration, Defination, Call*/
+agent_declaration ::= "Agent" identifier "=" integer_constant
 
-string ::= '"' [a-zA-Z0-9 ]* '"'
+agent_call ::= identifier "[" range_expression "]"
 
-symbol_assignment ::= "="
+/* //FIXME: "Task" | "Behavior" | "Action"的格式约束不同怎么体现 */
+function_defination ::= "Task" | "Behavior" | "Action" identifier "(" ( identifier ( "," identifier )* )? "):" function_block+ 
 
-symlbol_compare ::= "==" | "!=" | "<" | "<=" | ">" | ">="
+function_block ::= ( "@subtask" | "@behavior" | "@action" | "@agents" | "@topic" | "@init" | "@goal" | "@routine" ) statement*
 
-symbol_parallel ::= "||"
+function_call ::= identifier "(" ( identifier ( "," identifier )* )? ")"
 
-single_expression ::=  ( number | variant | string ) symlbol_compare ( number | variant | string )
+/* Statements */
+statement ::= topic_statement
+            | each_statement
+            | order_statement
+            | return_statement
+            | selection_statement
+            | expression_statement
+            | parallel_statement
 
-expression_negative ::= "not" single_expression
+topic_statement ::= "publish" expression "to" identifier
+                | "subscribe" expression "from" identifier
+                | "request" expression "from" identifier
 
-expression ::= ( single_expression | expression_negative) ( ( "and" | "or" ) ( single_expression | expression_negative) )*
+each_statement ::= "each" agent_call ":" ( topic_statement | selection_statement | expression_statement )+
 
-/* DSL syntax component */
-variant_uav_type ::= variant
+order_statement ::= "order" agent_call ":" ( topic_statement | selection_statement | expression_statement )+
 
-variant_topic ::= variant
+return_statement ::= "return" expression
 
-variant_uav_count_argument ::= variant
+selection_statement ::= "if" expression ":" statement+ ( "else:" statement+ )?
 
-variant_uav_count_value ::= number | variant
+expression_statement ::= expression?
 
-variant_uav_type_count_pair ::= variant_uav_type ":" variant_uav_count_argument
+parallel_statement ::= "||"
 
-variant_uav_type_count_list ::= "{" variant_uav_type_count_pair ( "," variant_uav_type_count_pair)* "}"
+/* Expressions */
+expression ::= assignment_expression
+            | expression "," assignment_expression                
 
-variant_argument ::= variant
+assignment_expression ::= identifier "=" negative_expression
 
-variant_argument_value ::= number | variant
+negative_expression ::= "!"? logical_or_expression
 
-variant_argument_list ::= variant_argument ( "," variant_argument )*
+logical_or_expression ::= logical_and_expression
+                        | logical_or_expression "or" logical_and_expression
 
-variant_argument_value_list ::= "{" ( number | variant) ( "," number | variant )* "}"
+logical_and_expression ::= equality_expression
+                        | logical_and_expression "and" equality_expression
 
-variant_task ::= variant
+equality_expression ::= relational_expression
+                    | equality_expression "==" relational_expression
+                    | equality_expression "!=" relational_expression
 
-variant_behavior ::= variant
+relational_expression ::= additive_expression
+                        | relational_expression "<" additive_expression
+                        | relational_expression "<=" additive_expression
+                        | relational_expression ">" additive_expression
+                        | relational_expression ">=" additive_expression
 
-variant_action ::= variant
+additive_expression ::= multiplicative_expression
+                        | additive_expression "+" multiplicative_expression
+                        | additive_expression "-" multiplicative_expression
 
-/* DSL generic statement */
-statement_generic ::= statement_topic | statement_variant_calculate
+multiplicative_expression ::= primary_expression
+                                | multiplicative_expression "*" primary_expression
+                                | multiplicative_expression "/" primary_expression
+                                | multiplicative_expression "%" primary_expression
 
-statement_topic ::= statement_publish_to | statement_request_from | statement_subscribe_from
 
-statement_publish_to ::= "publish" variant "to" variant_topic
+range_expression ::= ( integer_constant | identifier) "~" ( integer_constant | identifier)
+                    | ( integer_constant | identifier) "~" ( integer_constant | identifier) "~" ( integer_constant | identifier)
+                    | ( integer_constant | identifier) ( "," ( integer_constant | identifier) )*
 
-statement_request_from ::= "request" variant "from" variant_topic
+primary_expression ::= identifier
+                    | constant
+                    | "(" primary_expression ")"
 
-statement_subscribe_from ::= "subscribe" variant "from" variant_topic
+identifier ::= [a-zA-Z] ( [a-zA-Z0-9] | "_" )*
 
-statement_variant_calculate ::= variant symbol_assignment ( variant | number ) [+-*/%] ( variant | number )
+/* Constants */
+constant ::= integer_constant 
+            | floating_constant
+            | string_constant
 
-/* DSL task statement */
-task_statement ::= statement_generic | task_statement_assignment | task_statement_task_call | task_statement_behavior_call
+integer_constant ::= "0" 
+                    | ( [1-9] [0-9]* )
 
-/* TODO:任务层调用可能有返回值 */
-task_statement_assignment ::= variant symbol_assignment ( number | variant ) 
+floating_constant ::= integer_constant "." integer_constant
 
-task_statement_task_call ::= variant_task "(" variant_uav_type_count_list ( "," variant_argument_value)* ")"
-
-task_statement_behavior_call ::= variant_behavior "(" ( variant_argument_value ( "," variant_argument_value)* )? ")"
-
-task_block ::= task_block_each | task_block_order | task_block_if_else
-
-task_block_each ::= "each" variant_uav_type "[" ( number | variant ) ":" ( number | variant ) "]:\n" ( "\t" task_statement )+
-
-task_block_order ::= "order" variant_uav_type "[" ( number | variant ) ":" ( number | variant ) "]:\n" ( "\t" task_statement )+
-
-task_block_if_else ::= "if" expression ":\n" ( "\t" task_statement | task_block )+ ( "else:" task_statement | task_block )?
-
-/* DSL behavior statement */
-behavior_statement ::= statement_generic | behavior_statement_assignment | behavior_statement_action_call
-
-behavior_statement_assignment ::= variant symbol_assignment ( number | variant | behavior_statement_action_call)
-
-behavior_statement_action_call ::= variant_action "(" ( variant_argument_value ( "," variant_argument_value)* )? ")"
-
-behavior_block_if_else ::= "if" expression ":\n" ( "\t" behavior_statement | behavior_block_if_else )+ ( "else:" behavior_statement | behavior_block_if_else )?
-
-/* DSL action statement */
-
-/* DSL task structure */
-task ::= "Task" variant_task "(" variant_uav_type_count_list variant_argument_list "):\n" 
-    "@uavTypes:" 
-        variant_uav_type ( "," variant_uav_type )*
-    "@topic:"
-        ( variant_topic ( "," variant_topic )* )?
-    "@init:"
-        ( statement_topic | statement_variant_calculate | task_statement_assignment )*
-    "@goal:"
-        ( statement_topic | statement_variant_calculate | task_statement_assignment )*
-        expression
-    "@subtask:"
-        ( variant_task ( "," variant_task)* )?
-    "@behavior:"
-        ( variant_behavior ( "," variant_behavior)* )?
-    "@routine:"
-        ( task_block_each | task_block_order | task_statement )+
-        ( symbol_parallel
-        ( task_block_each | task_block_order | task_statement )+ )?
-
-/* DSL behavior structure */
-behavior ::= "Behavior" variant_behavior "(" variant_argument_list? "):\n"
-    "@topic:"
-        ( variant_topic ( "," variant_topic)* )?
-    "@action:"
-        variant_action ( "," variant_action )*
-    "@init:"
-        ( behavior_statement_assignment | )
-    "@goal:"
-        expression
-    "@routine:"
-        ( statement_topic | statement_variant_calculate | behavior_statement_assignment )+
-        ( symbol_parallel
-        ( statement_topic | statement_variant_calculate | behavior_statement_assignment )+ )?
-
-/* DSL action structure */
+string_constant ::= '"' [a-zA-Z0-9 ]* '"'
