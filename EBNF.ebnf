@@ -1,49 +1,132 @@
-main ::= "main():" agent_declaration+ function_call*
+/* Program */
+program ::= port action* agent* behavior* task* main
 
-/* Declaration, Defination, Call*/
-agent_declaration ::= "Agent" identifier "=" integer_constant
+/* Port */
+port ::= "Port" ":" integer
 
-agent_call ::= identifier "[" range_expression "]"
+/* Main */
+main ::= "Main" "{" agent_call task_call* "}"
 
-/* //FIXME: "Task" | "Behavior" | "Action"的格式约束不同怎么体现 */
-function_defination ::= "Task" | "Behavior" | "Action" identifier "(" ( identifier ( "," identifier )* )? "):" function_block+ 
+/* Call */
+task_call ::= variable "(" actual_parameters_agent_list actual_parameters? ")"
 
-function_block ::= ( "@subtask" | "@behavior" | "@action" | "@agents" | "@topic" | "@init" | "@goal" | "@routine" ) statement*
+function_call ::= variable "(" actual_parameters? ")"
 
-function_call ::= identifier "(" ( identifier ( "," identifier )* )? ")"
+agent_call ::= "Agent" variable ( "," variable )* ";"
 
-/* Statements */
-statement ::= topic_statement
-            | each_statement
-            | order_statement
-            | return_statement
-            | selection_statement
-            | expression_statement
-            | parallel_statement
+agent_range ::= variable "[" range_expression "]"
 
-topic_statement ::= "publish" expression "to" identifier
-                | "subscribe" expression "from" identifier
-                | "request" expression "from" identifier
+/* Task */
+task ::= "Task" variable "(" formal_parameters_agent_list formal_parameters? ")" "{" task_init_block task_goal_block task_routine_block "}"
 
-each_statement ::= "each" agent_call ":" ( topic_statement | selection_statement | expression_statement )+
+task_init_block ::= "@init" task_compound_statement
 
-order_statement ::= "order" agent_call ":" ( topic_statement | selection_statement | expression_statement )+
+task_goal_block ::= "@goal" "{" ( task_statement ( ";" task_statement )* )? expression "}
 
-return_statement ::= "return" expression
+task_routine_block ::= "@routine" task_routine_parallel | task_routine_order
 
-selection_statement ::= "if" expression ":" statement+ ( "else:" statement+ )?
+task_routine_parallel ::= task_compound_statement ( "||" task_compound_statement )* 
 
-expression_statement ::= expression?
+task_routine_order ::= "order" agent_range task_compound_statement
 
-parallel_statement ::= "||"
+task_routine_each ::= "each" agent_range task_compound_statement
+
+task_compound_statement ::= "{" task_statement ( ";" task_statement )* "}
+
+task_statement ::= put_statement
+                | get_statement
+                | assignment_statement
+                | function_call
+                | task_if_else
+
+task_if_else ::= "if" "(" expression ")" task_compound_statement ( "else" task_compound_statement )?
+
+/* Behavior */
+behavior ::= "Behavior" variable "(" formal_parameters? ")" "{" behavior_init_block behavior_goal_block behavior_routine_block "}"
+
+behavior_init_block ::= "@init" behavior_compound_statement
+
+behavior_goal_block ::= "@goal" behavior_compound_statement
+
+behavior_routine_block ::= "@routine" behavior_compound_statement ( "||" behavior_compound_statement )*
+
+behavior_compound_statement ::= "{" behavior_statement ( ";" behavior_statement )* "}
+
+behavior_statement ::= behavior_publish_statement
+                        | behavior_subscribe_statement
+                        | behavior_unsubscribe_statement
+                        | put_statement
+                        | get_statement
+                        | assignment_statement
+                        | function_call
+                        | behavior_if_else
+
+behavior_publish_statement ::= "publish" expression "to" ( topic_p2p | topic_multicast )
+
+behavior_subscribe_statement ::= "subscribe" variable "from" ( topic_p2p | topic_multicast ) behavior_compound_statement
+
+behavior_unsubscribe_statement ::= "unsubscribe" ( topic_p2p | topic_multicast )
+
+behavior_if_else ::= "if" "(" expression ")" behavior_compound_statement ( "else" behavior_compound_statement )?
+
+/* Agent */
+agent ::= "Agent" variable "{" ( variable ( "," variable )* )? "}"
+
+/* Action */
+action ::= "Action" variable "(" formal_parameters? ")" action_compound_statement
+
+action_compound_statement ::= "{" action_statement ( ";" action_statement )* "}
+
+action_statement ::= action_RPC_call_assignment_statement
+                    | action_RPC_call_statement
+                    | action_return_statement
+                    | action_if_else
+                    | assignment_statement
+                    | empty 
+
+action_RPC_call_assignment_statement ::= variable action_RPC_call_statement
+
+action_RPC_call_statement ::= ":=" string
+
+action_return_statement ::= "return" expression
+
+action_if_else ::= "if" "(" expression ")" action_compound_statement ( "else" action_compound_statement )?
+
+/* Basic Statement */
+put_statement ::= "put" expression "to" stigmergy
+
+get_statement ::= "get" variable "from" stigmergy
+
+assignment_statement ::= variable "=" ( string | logical_not_expression | function_call )
+
+expression_statement ::= expression
+
+empty ::= 
+
+/* Basic Elements */
+stigmergy ::= "#" variable "#"
+
+topic_p2p ::= "<" variable ">"
+
+topic_multicast ::= "<<" variable ">>"
+
+/* Parameters */
+formal_parameters_agent_list ::= "{" formal_parameters_type_count_pair ( "," formal_parameters_type_count_pair ) "}"
+
+actual_parameters_agent_list ::= "{" actual_parameters_type_count_pair ( "," actual_parameters_type_count_pair ) "}"
+
+formal_parameters_type_count_pair ::= variable ":" variable
+
+actual_parameters_type_count_pair ::= variable ":" ( integer | variable )
+
+formal_parameters ::= variable ( "," variable )*
+
+actual_parameters ::= ( integer | variable ) ( "," ( integer | variable ) )*
 
 /* Expressions */
-expression ::= assignment_expression
-            | expression "," assignment_expression                
+expression ::= logical_not_expression
 
-assignment_expression ::= identifier "=" negative_expression
-
-negative_expression ::= "!"? logical_or_expression
+logical_not_expression ::= "not"? logical_or_expression
 
 logical_or_expression ::= logical_and_expression
                         | logical_or_expression "or" logical_and_expression
@@ -61,34 +144,22 @@ relational_expression ::= additive_expression
                         | relational_expression ">" additive_expression
                         | relational_expression ">=" additive_expression
 
-additive_expression ::= multiplicative_expression
-                        | additive_expression "+" multiplicative_expression
-                        | additive_expression "-" multiplicative_expression
+additive_expression ::= multiplicative_expression ( ( "+" | "-" ) multiplicative_expression )*
 
-multiplicative_expression ::= primary_expression
-                                | multiplicative_expression "*" primary_expression
-                                | multiplicative_expression "/" primary_expression
-                                | multiplicative_expression "%" primary_expression
+multiplicative_expression ::= primary_expression ( ( "*" | "/" | "%" ) primary_expression )*
 
+primary_expression ::= integer
+                        | ( "+" | "-" ) primary_expression
+                        | "(" expression ")"
+                        | variable
 
-range_expression ::= ( integer_constant | identifier) "~" ( integer_constant | identifier)
-                    | ( integer_constant | identifier) "~" ( integer_constant | identifier) "~" ( integer_constant | identifier)
-                    | ( integer_constant | identifier) ( "," ( integer_constant | identifier) )*
+range_expression ::= ( integer | variable) "~" ( integer | variable)
+                    | ( integer | variable) "~" ( integer | variable) "~" ( integer | variable)
+                    | ( integer | variable) ( "," ( integer | variable) )*
 
-primary_expression ::= identifier
-                    | constant
-                    | "(" primary_expression ")"
-
-identifier ::= [a-zA-Z] ( [a-zA-Z0-9] | "_" )*
+variable ::= [_a-zA-Z] [_a-zA-Z0-9]*
 
 /* Constants */
-constant ::= integer_constant 
-            | floating_constant
-            | string_constant
+integer ::= "0" | ( [1-9] [0-9]* )
 
-integer_constant ::= "0" 
-                    | ( [1-9] [0-9]* )
-
-floating_constant ::= integer_constant "." integer_constant
-
-string_constant ::= '"' [a-zA-Z0-9 ]* '"'
+string ::= "\"" ( #x0009 | #x000A | #x000D | [#x0020-#xFFFF] )*  "\""
