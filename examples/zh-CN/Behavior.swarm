@@ -1,0 +1,44 @@
+Behavior 发现灾民并广播位置(v): 
+	@service: <searchedCount>
+	@topic: <<targetLocation>>
+	@action: chooseAdest, flyTo, takePicture, CnnRecognize, getGPS
+	@init:
+	@goal:	# 找到所有灾民
+		get searchedCnt from <searchedCount>
+		searchedCnt == v
+	@routine:
+		dest = chooseAdest()
+		flyTo(dest)
+		||
+		img = takePicture()
+		result = CnnRecognize(img)
+		if result == True:
+			tarLoc = getGPS() 
+			publish tarLoc to <<targetLocation>>
+			get searchedCnt from <searchedCount>
+			searchedCnt++
+			put searchedCnt to <searchedCount>
+
+Behavior 前往解救灾民(dest):
+	@service: <rescuedCount>
+	@topic: 
+	@action: getGPS, getHomeLoc, pickUp, returnToHome
+	@init:
+	@goal: 	# 解救一个灾民
+		getGPS() == getHomeLoc()
+	@routine:
+		到达目标点(dest) # 子行为	
+		pickUp()		# 既定动作
+		returnToHome()	# 神经网络模型
+		get rescuedCnt from <rescuedCount>
+		rescuedCnt++
+		put rescuedCnt to <rescuedCount>
+
+Behavior 到达目标点(dest):
+	@topic: 
+	@action: getGPS, flyStepTo
+	@init:
+	@goal: 	# 解救一个灾民
+		getGPS() == dest
+	@routine:
+		flyTo(dest)	# 神经网络模型

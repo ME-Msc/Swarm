@@ -1,0 +1,29 @@
+Action getGPS():
+    gpsData = airsim.client.VehicleClient.getGpsData(gps_name='', vehicle_name='')
+    # https://microsoft.github.io/AirSim/api_docs/html/index.html#airsim.client.VehicleClient.getGpsData
+    return gpsData
+
+Action take_picture():
+    img = airsim.client.VehicleClient.simGetImage()
+    # https://microsoft.github.io/AirSim/api_docs/html/index.html#airsim.client.VehicleClient.simGetImages
+    return img
+
+Action chooseAdest():
+
+Action CnnRecognize():
+
+Action flyTo(position):
+    nn_model(position)
+
+Action pick_up():
+
+Action getHomeLoc():
+    homeLoc = getHomeGeoPoint(vehicle_name='')
+    # https://microsoft.github.io/AirSim/api_docs/html/index.html#airsim.client.VehicleClient.getHomeGeoPoint
+    return homeLoc
+
+Action returnToHome():
+    homeLoc = getHomeGeoPoint(vehicle_name='')
+    # https://microsoft.github.io/AirSim/api_docs/html/index.html#airsim.client.VehicleClient.getHomeGeoPoint
+    airsim.client.MultirotorClient.goHomeAsync()
+    # https://microsoft.github.io/AirSim/api_docs/html/index.html#airsim.client.MultirotorClient.goHomeAsync

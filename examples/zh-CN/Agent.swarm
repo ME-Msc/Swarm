@@ -1,0 +1,7 @@
+Port : 14457
+
+Agent searchUav:
+    getGPS, take_picture, chooseAdest, CnnRecognize, flyTo, getHomeLoc, returnToHome
+
+Agent resuceUav:
+    getGPS, flyTo, pickUp, getHomeLoc, returnToHome
