@@ -1,7 +1,7 @@
 Port : 1234
 
 Action getGPS() {
-    gpsData := "airsim.client.VehicleClient.getGpsData(gps_name='', vehicle_name='')" ;
+    gpsData := "airsim.client.VehicleClient.getGpsData()" ;
     return gpsData ;
 }
 
@@ -21,7 +21,7 @@ Action CnnRecognize() {
 }
 
 Action flyTo(position) {
-    := nn_model(position) ;
+    := "nn_model(position)" ;
 }
 
 Action pick_up() {
@@ -29,13 +29,13 @@ Action pick_up() {
 }
 
 Action getHomeLoc() {
-    homeLoc := getHomeGeoPoint(vehicle_name='') ;
+    homeLoc := "getHomeGeoPoint()" ;
     return homeLoc ;
 }
 
 Action returnToHome() {
-    homeLoc := getHomeGeoPoint(vehicle_name='') ;
-    := airsim.client.MultirotorClient.goHomeAsync() ;
+    homeLoc := "getHomeGeoPoint()" ;
+    := "airsim.client.MultirotorClient.goHomeAsync()" ;
 }
 
 Agent searchUav {
@@ -49,94 +49,102 @@ Agent resuceUav {
 Behavior 发现灾民并广播位置(v){
 	@init {}
 	@goal {	/* 找到所有灾民 */
-		get searchedCnt from <searchedCount>;
+		get searchedCnt from #searchedCount#;
 		searchedCnt == v;
     }
 	@routine {
-		dest = chooseAdest()
-		flyTo(dest)
+		dest = chooseAdest() ;
+		flyTo(dest) ;
     }
     ||
     {
-		img = takePicture()
-		result = CnnRecognize(img)
-		if result == True {
+		img = takePicture() ;
+		result = CnnRecognize(img) ;
+		if(result == True){
 			tarLoc = getGPS() ;
-			publish tarLoc to <<targetLocation>>;
-			get searchedCnt from <searchedCount>;
-			searchedCnt = searchedCnt + 1;
-			put searchedCnt to <searchedCount>;
+			publish tarLoc to <targetLocation> ;
+			get searchedCnt from #searchedCount# ;
+			searchedCnt = searchedCnt + 1 ;
+			put searchedCnt to #searchedCount# ;
         }
     }
 }
 
-Behavior 前往解救灾民(dest){
+Behavior 前往解救灾民(){
 	@init {}
-	@goal {						/* 解救一个灾民 */
+	@goal {											/* 解救一个灾民 */
 		getGPS() == getHomeLoc();
     }
 	@routine {
-		到达目标点(dest);				/* 子行为 */
-		pickUp();						/* 既定动作 */
-		returnToHome();					/* 神经网络模型 */
-		get rescuedCnt from <rescuedCount>;
-		rescuedCnt = rescuedCnt + 1;
-		put rescuedCnt to <rescuedCount>;
+		subscribe tarLoc from <<targetLocation>> {	/* 单播话题有waiting list */
+			unsubscribe <<targetLocation>> ;
+			到达目标点(tarLoc) ;					 /* 子行为 */
+			pickUp() ;								/* 既定动作 */
+			returnToHome() ;						/* 神经网络模型 */
+			get rescuedCnt from #rescuedCount# ;
+			rescuedCnt = rescuedCnt + 1 ;
+			put rescuedCnt to #rescuedCount# ;
+		}
     }
 }
 
 Behavior 到达目标点(dest){
 	@init {}
 	@goal {  			/* 解救一个灾民	*/
-		getGPS() == dest;
+		getGPS() == dest ;
     }
 	@routine {
-		flyTo(dest);	/* 神经网络模型 */
+		flyTo(dest) ;	/* 神经网络模型 */
     }
 }
 
 Task 地震救灾({typeA:r1, typeB:r2}, s) {
 	@init{
 		rescuedCnt = 0 ;
-		put rescuedCnt to <rescuedCount> ;
+		put rescuedCnt to #rescuedCount# ;
 	}
-	@goal{ # 解救n个人
-		get rescuedCnt from <rescuedCount> ;
+	@goal{								/* 解救n个人 */
+		get rescuedCnt from #rescuedCount# ;
 		rescuedCnt == s ;
 	}
 	@routine{
-		搜寻灾民(typeA[0~r1], s);		/* 子任务 */
+		搜寻灾民(typeA[0~r1], s) ;		/* 子任务 */
 	}
-	|| {
-		解救灾民(typeB[0~r2], s);		/* 子任务 */
+	||
+	{
+		解救灾民(typeB[0~r2], s) ;		/* 子任务 */
 	}
 }
 
 Task 搜寻灾民({typeA:t1}, u){
-	@init: 
+	@init {
 		searchedCnt = 0;
-		put searchedCnt to <searchedCount>;
-	@goal:	# 找到n个人
-		get searchedCnt from <searchedCount>;
+		put searchedCnt to #searchedCount#;
+	}
+	@goal {							/* 找到n个人 */
+		get searchedCnt from #searchedCount#;
 		searchedCnt == u;
-	@routine:
-		each typeA[0~t1]:			/* each多线程调度单机行为，执行完行为的无人机放回each队列中 */
+	}
+	@routine {
+		each typeA[0~t1]{			/* each多线程调度单机行为，执行完行为的无人机放回each队列中 */
 			发现灾民并广播位置(u);
+		}
+	}
 }
 
 Task 解救灾民({resuceUav:t2}, u):
 	/* # # client-server服务 < > pub-sub话题单播 << >> pub-sub话题多播 */
-	@init:
-	@goal:
-		get rescuedCnt from <rescuedCount>;
+	@init {}
+	@goal {
+		get rescuedCnt from #rescuedCount#;
 		rescuedCnt == u;
-	@routine:
-		order rescue_uav[0~t2]:
-			subscribe tarLoc from <<targetLocation>>:	/* 单播话题有waiting list */
-				unsubscribe <<targetLocation>>;
-				前往解救灾民(tarLoc);
+	}
+	@routine {
+		order rescue_uav[0~t2]{
+			前往解救灾民();
+		}
+	}
 
 Main {
-	Agent searchUav, resuceUav;
-	地震救灾({searchUav:5, resuceUav:10}, 20);			/* 救20人，5无人侦察机，10无人直升机 */
+	地震救灾({searchUav:5, resuceUav:10}, 20);			/* 5无人侦察机，10无人解救直升机，救20人*/
 }
