@@ -57,6 +57,10 @@ statement_subscribe_from ::= "subscribe" variant "from" variant_topic
 
 statement_variant_calculate ::= variant symbol_assignment ( variant | number ) [+-*/%] ( variant | number )
 
+/* 顺序语句：一个无人机依次完成多个动作
+   群体语句：each一组无人机同时做、order一组无人机依次去做、多组无人机并行做不同任务
+   选择语序：一个无人机在不同环境下做不同动作
+*/
 /* DSL task statement */
 task_statement ::= statement_generic | task_statement_assignment | task_statement_task_call | task_statement_behavior_call
 
