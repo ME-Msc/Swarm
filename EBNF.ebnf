@@ -1,5 +1,5 @@
 /* Program */
-program ::= port action* agent* behavior* task* main
+program ::= port action_list agent_list behavior_list task_list main
 
 /* Port */
 port ::= "Port" ":" integer
@@ -17,11 +17,13 @@ agent_call ::= "Agent" variable ( "," variable )* ";"
 agent_range ::= variable "[" range_expression "]"
 
 /* Task */
+task_list ::= task+
+
 task ::= "Task" variable "(" formal_parameters_agent_list formal_parameters? ")" "{" task_init_block task_goal_block task_routine_block "}"
 
 task_init_block ::= "@init" task_compound_statement
 
-task_goal_block ::= "@goal" "{" ( task_statement ( ";" task_statement )* )? expression "}
+task_goal_block ::= "@goal" "{" ( task_statement ( ";" task_statement )* )? expression "}"
 
 task_routine_block ::= "@routine" task_routine_parallel | task_routine_order
 
@@ -31,7 +33,7 @@ task_routine_order ::= "order" agent_range task_compound_statement
 
 task_routine_each ::= "each" agent_range task_compound_statement
 
-task_compound_statement ::= "{" task_statement ( ";" task_statement )* "}
+task_compound_statement ::= "{" task_statement ( ";" task_statement )* "}"
 
 task_statement ::= put_statement
                 | get_statement
@@ -42,15 +44,17 @@ task_statement ::= put_statement
 task_if_else ::= "if" "(" expression ")" task_compound_statement ( "else" task_compound_statement )?
 
 /* Behavior */
+behavior_list ::= behavior+
+
 behavior ::= "Behavior" variable "(" formal_parameters? ")" "{" behavior_init_block behavior_goal_block behavior_routine_block "}"
 
 behavior_init_block ::= "@init" behavior_compound_statement
 
-behavior_goal_block ::= "@goal" "{" ( behavior_statement ( ";" behavior_statement )* )? expression "}
+behavior_goal_block ::= "@goal" "{" ( behavior_statement ( ";" behavior_statement )* )? expression "}"
 
 behavior_routine_block ::= "@routine" behavior_compound_statement ( "||" behavior_compound_statement )*
 
-behavior_compound_statement ::= "{" behavior_statement ( ";" behavior_statement )* "}
+behavior_compound_statement ::= "{" behavior_statement ( ";" behavior_statement )* "}"
 
 behavior_statement ::= behavior_publish_statement
                         | behavior_subscribe_statement
@@ -70,12 +74,16 @@ behavior_unsubscribe_statement ::= "unsubscribe" ( topic_p2p | topic_multicast )
 behavior_if_else ::= "if" "(" expression ")" behavior_compound_statement ( "else" behavior_compound_statement )?
 
 /* Agent */
+agent_list ::= agent+
+
 agent ::= "Agent" variable "{" ( variable ( "," variable )* )? ";" "}"
 
 /* Action */
+action_list ::= action+
+
 action ::= "Action" variable "(" formal_parameters? ")" action_compound_statement
 
-action_compound_statement ::= "{" action_statement ( ";" action_statement )* "}
+action_compound_statement ::= "{" action_statement ( ";" action_statement )* "}"
 
 action_statement ::= action_RPC_call_assignment_statement
                     | action_RPC_call_statement
@@ -162,6 +170,6 @@ variable ::= [_a-zA-Z] [_a-zA-Z0-9]*
 /* Constants */
 integer ::= "0" | ( [1-9] [0-9]* )
 
-string ::= "\"" ( #x0009 | #x000A | #x000D | [#x0020-#xFFFF] )*  "\""
+string ::= '"' ( #x0009 | #x000A | #x000D | [#x0020-#xFFFF] )*  '"'
 
 comments ::= "/*" ( #x0009 | #x000A | #x000D | [#x0020-#xFFFF] )* "*/"
