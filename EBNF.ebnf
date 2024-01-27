@@ -46,7 +46,7 @@ behavior ::= "Behavior" variable "(" formal_parameters? ")" "{" behavior_init_bl
 
 behavior_init_block ::= "@init" behavior_compound_statement
 
-behavior_goal_block ::= "@goal" behavior_compound_statement
+behavior_goal_block ::= "@goal" "{" ( behavior_statement ( ";" behavior_statement )* )? expression "}
 
 behavior_routine_block ::= "@routine" behavior_compound_statement ( "||" behavior_compound_statement )*
 
@@ -70,7 +70,7 @@ behavior_unsubscribe_statement ::= "unsubscribe" ( topic_p2p | topic_multicast )
 behavior_if_else ::= "if" "(" expression ")" behavior_compound_statement ( "else" behavior_compound_statement )?
 
 /* Agent */
-agent ::= "Agent" variable "{" ( variable ( "," variable )* )? "}"
+agent ::= "Agent" variable "{" ( variable ( "," variable )* )? ";" "}"
 
 /* Action */
 action ::= "Action" variable "(" formal_parameters? ")" action_compound_statement
@@ -163,3 +163,5 @@ variable ::= [_a-zA-Z] [_a-zA-Z0-9]*
 integer ::= "0" | ( [1-9] [0-9]* )
 
 string ::= "\"" ( #x0009 | #x000A | #x000D | [#x0020-#xFFFF] )*  "\""
+
+comments ::= "/*" ( #x0009 | #x000A | #x000D | [#x0020-#xFFFF] )* "*/"
