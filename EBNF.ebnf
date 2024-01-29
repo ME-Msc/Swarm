@@ -23,7 +23,7 @@ task_init_block ::= "@init" task_compound_statement
 
 task_goal_block ::= "@goal" "{" ( task_statement ( ";" task_statement )* )? expression "}"
 
-task_routine_block ::= "@routine" task_routine_parallel | task_routine_order
+task_routine_block ::= "@routine" ( task_routine_parallel | task_routine_order | task_routine_each )
 
 task_routine_parallel ::= task_compound_statement ( "||" task_compound_statement )* 
 
