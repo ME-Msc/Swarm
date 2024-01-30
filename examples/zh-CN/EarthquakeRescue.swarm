@@ -200,5 +200,5 @@ Main {
 	Agent searchUav 5 ;
 	Agent resuceUav 10 ;
 	/* 调用Task */
-	地震救灾({ searchUav[0~5], resuceUav[0~10] }, 20);			/* 5无人侦察机，10无人解救直升机，救20人*/
+	地震救灾({ searchUav[0~5], resuceUav[0~10] }, 20);	/* 5无人侦察机，10无人解救直升机，救20人*/
 }
