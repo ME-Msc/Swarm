@@ -5,14 +5,14 @@ program ::= port action_list agent_list behavior_list task_list main
 port ::= "Port" ":" integer
 
 /* Main */
-main ::= "Main" "{" task_call* "}"
+main ::= "Main" "{" agent_call+ task_call* "}"
 
 /* Call */
 task_call ::= variable "(" actual_parameters_agent_list actual_parameters? ")"
 
 function_call ::= variable "(" actual_parameters? ")"
 
-agent_range ::= variable "[" range_expression "]"
+agent_call ::= "Agent" variable integer ";"
 
 /* Task */
 task_list ::= task+
@@ -27,9 +27,9 @@ task_routine_block ::= "@routine" ( task_routine_parallel | task_routine_order |
 
 task_routine_parallel ::= task_compound_statement ( "||" task_compound_statement )* 
 
-task_routine_order ::= "order" agent_range task_compound_statement
+task_routine_order ::= "order" actual_parameters_agent_range task_compound_statement
 
-task_routine_each ::= "each" agent_range task_compound_statement
+task_routine_each ::= "each" actual_parameters_agent_range task_compound_statement
 
 task_compound_statement ::= "{" task_statement ( task_statement )* "}"
 
@@ -117,13 +117,13 @@ topic_p2p ::= "<" variable ">"
 topic_multicast ::= "<<" variable ">>"
 
 /* Parameters */
-formal_parameters_agent_list ::= "{" formal_parameters_type_count_pair ( "," formal_parameters_type_count_pair ) "}"
+formal_parameters_agent_list ::= "{" formal_parameters_agent_range ( "," formal_parameters_agent_range ) "}"
 
-actual_parameters_agent_list ::= "{" actual_parameters_type_count_pair ( "," actual_parameters_type_count_pair ) "}"
+actual_parameters_agent_list ::= "{" actual_parameters_agent_range ( "," actual_parameters_agent_range ) "}"
 
-formal_parameters_type_count_pair ::= variable ":" variable
+formal_parameters_agent_range ::= variable "[" variable "~" variable "]"
 
-actual_parameters_type_count_pair ::= variable ":" ( integer | variable )
+actual_parameters_agent_range ::= variable "[" ( integer | variable) "~" ( integer | variable) "]"
 
 formal_parameters ::= variable ( "," variable )*
 
@@ -159,9 +159,9 @@ primary_expression ::= integer
                         | "(" expression ")"
                         | variable
 
-range_expression ::= ( integer | variable) "~" ( integer | variable)
+/* range_expression ::= ( integer | variable) "~" ( integer | variable)
                     | ( integer | variable) "~" ( integer | variable) "~" ( integer | variable)
-                    | ( integer | variable) ( "," ( integer | variable) )*
+                    | ( integer | variable) ( "," ( integer | variable) )* */
 
 variable ::= [_a-zA-Z] [_a-zA-Z0-9]*
 
