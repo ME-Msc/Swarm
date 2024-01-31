@@ -4,15 +4,72 @@ program ::= port action_list agent_list behavior_list task_list main
 /* Port */
 port ::= "Port" ":" integer
 
-/* Main */
-main ::= "Main" "{" agent_call+ task_call* "}"
+/* Action */
+action_list ::= action+
 
-/* Call */
-task_call ::= variable "(" actual_parameters_agent_list actual_parameters? ")"
+action ::= "Action" variable "(" formal_parameters? ")" action_compound_statement
 
-function_call ::= variable "(" actual_parameters? ")"
+action_compound_statement ::= "{" action_statement ( action_statement )* "}"
+
+action_statement ::= action_RPC_call_assignment_statement
+                    | action_RPC_call_statement
+                    | action_return_statement
+                    | action_if_else
+                    | assignment_statement
+                    | empty 
+
+action_RPC_call_assignment_statement ::= variable action_RPC_call_statement ";"
+
+action_RPC_call_statement ::= ":=" string ";"
+
+action_return_statement ::= "return" expression ";"
+
+action_if_else ::= "if" "(" expression ")" action_compound_statement ( "else" action_compound_statement )?
+
+action_call ::= variable "(" actual_parameters? ")"
+
+/* Agent */
+agent_list ::= agent+
+
+agent ::= "Agent" variable "{" ( variable ( "," variable )* )? ";" "}"
 
 agent_call ::= "Agent" variable integer ";"
+
+/* Behavior */
+behavior_list ::= behavior+
+
+behavior ::= "Behavior" variable "(" formal_parameters? ")" "{" behavior_init_block behavior_goal_block behavior_routine_block "}"
+
+behavior_init_block ::= "@init" behavior_compound_statement
+
+behavior_goal_block ::= "@goal" "{" ( behavior_statement ( ";" behavior_statement )* )? expression "}"
+
+behavior_routine_block ::= "@routine" behavior_compound_statement ( "||" behavior_compound_statement )*
+
+behavior_compound_statement ::= "{" behavior_statement ( behavior_statement )* "}"
+
+behavior_statement ::= put_statement
+                        | get_statement
+                        | behavior_publish_statement
+                        | behavior_subscribe_statement
+                        | behavior_unsubscribe_statement
+                        | behavior_assignment_statement
+                        | behavior_if_else
+                        | behavior_call
+                        | action_call
+                        | empty
+
+behavior_publish_statement ::= "publish" expression "to" ( topic_p2p | topic_multicast ) ";"
+
+behavior_subscribe_statement ::= "subscribe" variable "from" ( topic_p2p | topic_multicast ) behavior_compound_statement
+
+behavior_unsubscribe_statement ::= "unsubscribe" ( topic_p2p | topic_multicast ) ";"
+
+behavior_assignment_statement ::= variable "=" ( string | logical_not_expression | action_call ) ";"
+
+behavior_if_else ::= "if" "(" expression ")" behavior_compound_statement ( "else" behavior_compound_statement )?
+
+behavior_call ::= variable "(" actual_parameters? ")"
 
 /* Task */
 task_list ::= task+
@@ -36,74 +93,26 @@ task_compound_statement ::= "{" task_statement ( task_statement )* "}"
 task_statement ::= put_statement
                 | get_statement
                 | assignment_statement
-                | function_call
                 | task_if_else
+                | task_call
+                | behavior_call
+                | empty
+
 
 task_if_else ::= "if" "(" expression ")" task_compound_statement ( "else" task_compound_statement )?
 
-/* Behavior */
-behavior_list ::= behavior+
+task_call ::= variable "(" actual_parameters_agent_list actual_parameters? ")"
 
-behavior ::= "Behavior" variable "(" formal_parameters? ")" "{" behavior_init_block behavior_goal_block behavior_routine_block "}"
 
-behavior_init_block ::= "@init" behavior_compound_statement
-
-behavior_goal_block ::= "@goal" "{" ( behavior_statement ( ";" behavior_statement )* )? expression "}"
-
-behavior_routine_block ::= "@routine" behavior_compound_statement ( "||" behavior_compound_statement )*
-
-behavior_compound_statement ::= "{" behavior_statement ( behavior_statement )* "}"
-
-behavior_statement ::= behavior_publish_statement
-                        | behavior_subscribe_statement
-                        | behavior_unsubscribe_statement
-                        | put_statement
-                        | get_statement
-                        | assignment_statement
-                        | function_call
-                        | behavior_if_else
-
-behavior_publish_statement ::= "publish" expression "to" ( topic_p2p | topic_multicast ) ";"
-
-behavior_subscribe_statement ::= "subscribe" variable "from" ( topic_p2p | topic_multicast ) behavior_compound_statement
-
-behavior_unsubscribe_statement ::= "unsubscribe" ( topic_p2p | topic_multicast ) ";"
-
-behavior_if_else ::= "if" "(" expression ")" behavior_compound_statement ( "else" behavior_compound_statement )?
-
-/* Agent */
-agent_list ::= agent+
-
-agent ::= "Agent" variable "{" ( variable ( "," variable )* )? ";" "}"
-
-/* Action */
-action_list ::= action+
-
-action ::= "Action" variable "(" formal_parameters? ")" action_compound_statement
-
-action_compound_statement ::= "{" action_statement ( action_statement )* "}"
-
-action_statement ::= action_RPC_call_assignment_statement
-                    | action_RPC_call_statement
-                    | action_return_statement
-                    | action_if_else
-                    | assignment_statement
-                    | empty 
-
-action_RPC_call_assignment_statement ::= variable action_RPC_call_statement ";"
-
-action_RPC_call_statement ::= ":=" string ";"
-
-action_return_statement ::= "return" expression ";"
-
-action_if_else ::= "if" "(" expression ")" action_compound_statement ( "else" action_compound_statement )?
+/* Main */
+main ::= "Main" "{" agent_call+ task_call* "}"
 
 /* Basic Statement */
 put_statement ::= "put" expression "to" stigmergy ";"
 
 get_statement ::= "get" variable "from" stigmergy ";"
 
-assignment_statement ::= variable "=" ( string | logical_not_expression | function_call ) ";"
+assignment_statement ::= variable "=" ( string | logical_not_expression ) ";"
 
 expression_statement ::= expression ";"
 
