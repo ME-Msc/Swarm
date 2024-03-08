@@ -7,105 +7,101 @@ port ::= "Port" ":" integer
 /* Action */
 action_list ::= action+
 
-action ::= "Action" variable "(" formal_parameters? ")" action_compound_statement
+action ::= "Action" variable "(" formal_parameters ")" action_compound
 
-action_compound_statement ::= "{" action_statement ( action_statement )* "}"
+action_compound ::= "{" action_statement* "}"
 
 action_statement ::= action_RPC_call_assignment_statement
                     | action_RPC_call_statement
                     | action_return_statement
                     | action_if_else
                     | assignment_statement
-                    | empty 
+                    | empty_statement 
 
-action_RPC_call_assignment_statement ::= variable action_RPC_call_statement ";"
+action_RPC_call_assignment_statement ::= variable action_RPC_call_statement
 
-action_RPC_call_statement ::= ":=" string ";"
+action_RPC_call_statement ::= ":=" function_call ";"
 
 action_return_statement ::= "return" expression ";"
 
-action_if_else ::= "if" "(" expression ")" action_compound_statement ( "else" action_compound_statement )?
-
-action_call ::= variable "(" actual_parameters? ")"
+action_if_else ::= "if" "(" expression ")" action_compound ( "else" action_compound )?
 
 /* Agent */
 agent_list ::= agent+
 
 agent ::= "Agent" variable "{" ( variable ( "," variable )* )? ";" "}"
 
-agent_call ::= "Agent" variable integer ";"
+agent_call_statement ::= "Agent" variable integer ";"
 
 /* Behavior */
 behavior_list ::= behavior+
 
-behavior ::= "Behavior" variable "(" formal_parameters? ")" "{" behavior_init_block behavior_goal_block behavior_routine_block "}"
+behavior ::= "Behavior" variable "(" formal_parameters ")" "{" behavior_init_block behavior_goal_block behavior_routine_block "}"
 
-behavior_init_block ::= "@init" behavior_compound_statement
+behavior_init_block ::= "@init" behavior_compound
 
 behavior_goal_block ::= "@goal" "{" behavior_statement* "$" expression "}"
 
-behavior_routine_block ::= "@routine" behavior_compound_statement ( "||" behavior_compound_statement )*
+behavior_routine_block ::= "@routine" behavior_compound ( "||" behavior_compound )*
 
-behavior_compound_statement ::= "{" behavior_statement* "}"
+behavior_compound ::= "{" behavior_statement* "}"
 
 behavior_statement ::= put_statement
                         | get_statement
                         | behavior_publish_statement
-                        | behavior_subscribe_statement
+                        | behavior_subscribe
                         | behavior_unsubscribe_statement
                         | behavior_assignment_statement
                         | behavior_if_else
-                        | behavior_call
-                        | action_call
-                        | empty
+                        | ( function_call ";" )
+                        | assignment_statement
+                        | empty_statement
 
 behavior_publish_statement ::= "publish" expression "to" ( topic_p2p | topic_multicast ) ";"
 
-behavior_subscribe_statement ::= "subscribe" variable "from" ( topic_p2p | topic_multicast ) behavior_compound_statement
+behavior_subscribe ::= "subscribe" variable "from" ( topic_p2p | topic_multicast ) behavior_compound
 
 behavior_unsubscribe_statement ::= "unsubscribe" ( topic_p2p | topic_multicast ) ";"
 
-behavior_assignment_statement ::= variable "=" ( string | logical_not_expression | action_call ) ";"
+behavior_assignment_statement ::= variable "=" ( string | logical_not_expression | function_call ) ";"
 
-behavior_if_else ::= "if" "(" expression ")" behavior_compound_statement ( "else" behavior_compound_statement )?
+behavior_if_else ::= "if" "(" expression ")" behavior_compound ( "else" behavior_compound )?
 
-behavior_call ::= variable "(" actual_parameters? ")"
+function_call ::= variable "(" actual_parameters ")"
 
 /* Task */
 task_list ::= task+
 
-task ::= "Task" variable "(" formal_parameters_agent_list formal_parameters? ")" "{" task_init_block task_goal_block task_routine_block "}"
+task ::= "Task" variable "(" formal_parameters_agent_list formal_parameters ")" "{" task_init_block task_goal_block task_routine_block "}"
 
-task_init_block ::= "@init" task_compound_statement
+task_init_block ::= "@init" task_compound
 
 task_goal_block ::= "@goal" "{" task_statement* "$" expression "}"
 
-task_routine_block ::= "@routine" ( task_routine_parallel | task_routine_order | task_routine_each )
+task_routine_block ::= "@routine" task_compound ( "||" task_compound )* 
 
-task_routine_parallel ::= task_compound_statement ( "||" task_compound_statement )* 
-
-task_routine_order ::= "order" actual_parameters_agent_range task_compound_statement
-
-task_routine_each ::= "each" actual_parameters_agent_range task_compound_statement
-
-task_compound_statement ::= "{" task_statement* "}"
+task_compound ::= "{" task_statement* "}"
 
 task_statement ::= put_statement
                 | get_statement
                 | assignment_statement
                 | task_if_else
-                | task_call
-                | behavior_call
-                | empty
+                | task_call_statement
+                | task_order
+                | task_each
+                | empty_statement
 
+task_order ::= "order" actual_parameters_agent_range "{" function_call ( ";" function_call )* "}"
 
-task_if_else ::= "if" "(" expression ")" task_compound_statement ( "else" task_compound_statement )?
+task_each ::= "each" actual_parameters_agent_range "{" function_call ( ";" function_call )* "}"
 
-task_call ::= variable "(" actual_parameters_agent_list actual_parameters? ")"
+task_if_else ::= "if" "(" expression ")" task_compound ( "else" task_compound )?
+
+task_call_statement ::= variable "(" actual_parameters_agent_list actual_parameters ")" ";"
 
 
 /* Main */
-main ::= "Main" "{" agent_call+ task_call* "}"
+main ::= "Main" "{" agent_call_statement+ task_call_statement* "}"
 
 /* Basic Statement */
 put_statement ::= "put" expression "to" stigmergy ";"
@@ -114,9 +110,7 @@ get_statement ::= "get" variable "from" stigmergy ";"
 
 assignment_statement ::= variable "=" ( string | logical_not_expression ) ";"
 
-expression_statement ::= expression ";"
-
-empty ::= 
+empty_statement ::= ";"
 
 /* Basic Elements */
 stigmergy ::= "#" variable "#"
@@ -134,9 +128,9 @@ formal_parameters_agent_range ::= variable "[" variable "~" variable "]"
 
 actual_parameters_agent_range ::= variable "[" ( integer | variable) "~" ( integer | variable) "]"
 
-formal_parameters ::= variable ( "," variable )*
+formal_parameters ::= ( variable ( "," variable )* )?
 
-actual_parameters ::= ( integer | variable ) ( "," ( integer | variable ) )*
+actual_parameters ::= ( ( integer | variable ) ( "," ( integer | variable ) )* )?
 
 /* Expressions */
 expression ::= logical_not_expression
