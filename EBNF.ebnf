@@ -20,7 +20,7 @@ action_statement ::= action_RPC_call_assignment_statement
 
 action_RPC_call_assignment_statement ::= variable action_RPC_call_statement
 
-action_RPC_call_statement ::= ":=" function_call ";"
+action_RPC_call_statement ::= ":=" function_call_statement
 
 action_return_statement ::= "return" expression ";"
 
@@ -40,7 +40,7 @@ behavior ::= "Behavior" variable "(" formal_parameters ")" "{" behavior_init_blo
 
 behavior_init_block ::= "@init" behavior_compound
 
-behavior_goal_block ::= "@goal" "{" behavior_statement* "$" expression "}"
+behavior_goal_block ::= "@goal" "{" ( behavior_statement* "$" expression )? "}"
 
 behavior_routine_block ::= "@routine" behavior_compound ( "||" behavior_compound )*
 
@@ -53,7 +53,7 @@ behavior_statement ::= put_statement
                         | behavior_unsubscribe_statement
                         | behavior_assignment_statement
                         | behavior_if_else
-                        | ( function_call ";" )
+                        | function_call_statement
                         | assignment_statement
                         | empty_statement
 
@@ -63,11 +63,14 @@ behavior_subscribe ::= "subscribe" variable "from" ( topic_p2p | topic_multicast
 
 behavior_unsubscribe_statement ::= "unsubscribe" ( topic_p2p | topic_multicast ) ";"
 
-behavior_assignment_statement ::= variable "=" ( string | logical_not_expression | function_call ) ";"
+behavior_assignment_statement ::= variable "=" ( ( string ";" ) 
+                                                | ( logical_not_expression ";" )
+                                                | function_call_statement  /* Action Only */
+                                                )
 
 behavior_if_else ::= "if" "(" expression ")" behavior_compound ( "else" behavior_compound )?
 
-function_call ::= variable "(" actual_parameters ")"
+function_call_statement ::= variable "(" actual_parameters ")" ";"
 
 /* Task */
 task_list ::= task+
@@ -76,7 +79,7 @@ task ::= "Task" variable "(" formal_parameters_agent_list formal_parameters ")" 
 
 task_init_block ::= "@init" task_compound
 
-task_goal_block ::= "@goal" "{" task_statement* "$" expression "}"
+task_goal_block ::= "@goal" "{" ( task_statement* "$" expression )? "}"
 
 task_routine_block ::= "@routine" task_compound ( "||" task_compound )* 
 
@@ -91,9 +94,9 @@ task_statement ::= put_statement
                 | task_each
                 | empty_statement
 
-task_order ::= "order" actual_parameters_agent_range "{" function_call ( ";" function_call )* "}"
+task_order ::= "order" actual_parameters_agent_range "{" function_call_statement* "}"
 
-task_each ::= "each" actual_parameters_agent_range "{" function_call ( ";" function_call )* "}"
+task_each ::= "each" actual_parameters_agent_range "{" function_call_statement* "}"
 
 task_if_else ::= "if" "(" expression ")" task_compound ( "else" task_compound )?
 
@@ -162,9 +165,9 @@ primary_expression ::= integer
                         | "(" expression ")"
                         | variable
 
-/* range_expression ::= ( integer | variable) "~" ( integer | variable)
+range_expression ::= ( integer | variable) "~" ( integer | variable)
                     | ( integer | variable) "~" ( integer | variable) "~" ( integer | variable)
-                    | ( integer | variable) ( "," ( integer | variable) )* */
+                    | ( integer | variable) ( "," ( integer | variable) )*
 
 variable ::= [_a-zA-Z] [_a-zA-Z0-9]*
 
