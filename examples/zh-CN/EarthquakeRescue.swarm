@@ -43,7 +43,7 @@ Action returnToHome() {
 
 /* 描述 Agent 具备的执行动作能力 */
 Agent searchUav {
-    getGPS, take_picture, chooseAdest, CnnRecognize, flyTo, returnToHome ;
+    getGPS, takePicture, randomExploration, CnnRecognize, flyTo, returnToHome ;
 }
 
 Agent resuceUav {
