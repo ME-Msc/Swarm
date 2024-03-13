@@ -75,7 +75,7 @@ function_call_statement ::= variable "(" actual_parameters ")" ";"
 /* Task */
 task_list ::= task+
 
-task ::= "Task" variable "(" formal_parameters_agent_list formal_parameters ")" "{" task_init_block task_goal_block task_routine_block "}"
+task ::= "Task" variable "(" formal_parameters_agent_list "," formal_parameters ")" "{" task_init_block task_goal_block task_routine_block "}"
 
 task_init_block ::= "@init" task_compound
 
@@ -90,6 +90,7 @@ task_statement ::= put_statement
                 | assignment_statement
                 | task_if_else
                 | task_call_statement
+                | function_call_statement
                 | task_order
                 | task_each
                 | empty_statement
@@ -100,8 +101,7 @@ task_each ::= "each" actual_parameters_agent_range "{" function_call_statement* 
 
 task_if_else ::= "if" "(" expression ")" task_compound ( "else" task_compound )?
 
-task_call_statement ::= variable "(" actual_parameters_agent_list actual_parameters ")" ";"
-
+task_call_statement ::= variable "(" actual_parameters_agent_list "," actual_parameters ")" ";"
 
 /* Main */
 main ::= "Main" "{" agent_call_statement+ task_call_statement* "}"
@@ -123,17 +123,17 @@ topic_p2p ::= "<" variable ">"
 topic_multicast ::= "<<" variable ">>"
 
 /* Parameters */
-formal_parameters_agent_list ::= "{" formal_parameters_agent_range ( "," formal_parameters_agent_range ) "}"
+formal_parameters_agent_list ::= "{" formal_parameters_agent_range ( "," formal_parameters_agent_range )* "}"
 
-actual_parameters_agent_list ::= "{" actual_parameters_agent_range ( "," actual_parameters_agent_range ) "}"
+actual_parameters_agent_list ::= "{" actual_parameters_agent_range ( "," actual_parameters_agent_range )* "}"
 
 formal_parameters_agent_range ::= variable "[" variable "~" variable "]"
 
-actual_parameters_agent_range ::= variable "[" ( integer | variable) "~" ( integer | variable) "]"
+actual_parameters_agent_range ::= variable "[" additive_expression "~" additive_expression "]"
 
 formal_parameters ::= ( variable ( "," variable )* )?
 
-actual_parameters ::= ( ( integer | variable ) ( "," ( integer | variable ) )* )?
+actual_parameters ::= ( additive_expression ( "," additive_expression )* )?
 
 /* Expressions */
 expression ::= logical_not_expression
@@ -165,9 +165,9 @@ primary_expression ::= integer
                         | "(" expression ")"
                         | variable
 
-range_expression ::= ( integer | variable) "~" ( integer | variable)
+/* range_expression ::= ( integer | variable) "~" ( integer | variable)
                     | ( integer | variable) "~" ( integer | variable) "~" ( integer | variable)
-                    | ( integer | variable) ( "," ( integer | variable) )*
+                    | ( integer | variable) ( "," ( integer | variable) )* */
 
 variable ::= [_a-zA-Z] [_a-zA-Z0-9]*
 

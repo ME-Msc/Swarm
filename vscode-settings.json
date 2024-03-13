@@ -24,7 +24,7 @@
                 }
             ]
         },
-        "([{}\\[\\]])": { 
+        "([{}\\[\\]\\$])": { 
             "pattern" : "{}[]",
             "filterFileRegex": ".*\\.swarm",
             "decorations": [ 
@@ -106,7 +106,7 @@
                 }
             ]
         },
-        "(each |order |if |else |publish |subscribe |unsubscribe |get |put |from |to |return )": { 
+        "(each |order |if |else |publish |subscribe |unsubscribe |get |put |from |to |return |True|False)": { 
             "filterFileRegex": ".*\\.swarm",
             "decorations": [ 
                 {

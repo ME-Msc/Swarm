@@ -2,83 +2,69 @@ Port : 1234
 
 Action getGPS() {
 	/* gpsData 接收RPC调用的返回值 */
-    gpsData := "airsim.client.VehicleClient.getGpsData()" ;
+    gpsData := airsim.client.VehicleClient.getGpsData() ;
 	/* 将结果返回给调用者 */
     return gpsData ;
 }
 
-Action take_picture() {
+Action takePicture() {
 	/* img 接收RPC调用的返回值，图像信息 */
-    img := "airsim.client.VehicleClient.simGetImage()" ;
+    img := airsim.client.VehicleClient.simGetImage() ;
 	/* 将结果返回给调用者 */
     return img ;
 }
 
-Action chooseAdest() {
+Action randomExploration() {
 	/* dest 接收RPC调用的返回值，一个随机目的地信息 */
-    dest := "randomDest()" ;
-	/* 将结果返回给调用者 */
-    return dest ;
+    := randomExploration_NN_model() ;
 }
 
 Action CnnRecognize(img) {
 	/* res 接收RPC调用的返回值，神经网络识别图像的结果 */
-    res := "Cnn(img)" ;
+    res := CNN_model(img) ;
 	/* 将结果返回给调用者 */
     return res ;
 }
 
 Action flyTo(position) {
 	/* RPC调用神经网络，指导无人机飞行一步，没有返回值 */
-    := "nn_model(position)" ;
+    := flyTo_NN_model(position) ;
 }
 
-Action pick_up() {
+Action pickUp() {
 	/* RPC调用救起灾民的动作，没有返回值 */
-    := "pick_up" ;
-}
-
-Action getHomeLoc() {
-	/* homeLoc 接收RPC调用的返回值，起飞点的坐标信息 */
-    homeLoc := "getHomeGeoPoint()" ;
-	/* 将结果返回给调用者 */
-    return homeLoc ;
+    := pickUpAPI() ;
 }
 
 Action returnToHome() {
-	/* homeLoc 接收RPC调用的返回值，起飞点的坐标信息 */
-    homeLoc := "getHomeGeoPoint()" ;
 	/* 执行airsim的返回起飞点API，没有返回值 */
-	/* 等价于用 getHomeLoc 和 flyTo 组合定义一个 Behavior */
-    := "airsim.client.MultirotorClient.goHomeAsync()" ;
+    := airsim.client.MultirotorClient.goHomeAsync() ;
 }
 
 /* 描述 Agent 具备的执行动作能力 */
 Agent searchUav {
-    getGPS, take_picture, chooseAdest, CnnRecognize, flyTo, getHomeLoc, returnToHome ;
+    getGPS, take_picture, chooseAdest, CnnRecognize, flyTo, returnToHome ;
 }
 
 Agent resuceUav {
-    getGPS, flyTo, pickUp, getHomeLoc, returnToHome ;
+    getGPS, flyTo, pickUp, returnToHome ;
 }
 
 Behavior 发现灾民并广播位置(v){
 	@init {}
 	@goal {	
 		/* 目标：找到所有灾民 */
-		/* 从 searchedCount痕迹 中查询已经发现的人数 searchedCnt */
+		/* 从 searchedCount共识 中查询已经发现的人数 searchedCnt */
 		get searchedCnt from #searchedCount#;
 		/* 停止条件为，searchedCnt 达到目标人数 v */
-		searchedCnt == v;
+		$ searchedCnt == v
     }
 	/* 两个程序块并行执行，Behavior中的并行用于两组互不干扰的传感器执行过程 */
 	/* 下述程序块中，分别是对使用螺旋桨的飞行动作、使用相机的拍照动作的调用 */
 	/* 二者并不冲突，因此可以用并行程序块描述 */
 	@routine {
-		/* 调用 chooseAdest动作，确定一个目的地 */
-		dest = chooseAdest() ;
-		/* 向这个目的地飞行一步 */
-		flyTo(dest) ;
+		/* 调用 randomExploration 动作，随机探索 */
+		randomExploration();
     }
     || /* 并行符号 */
     {
@@ -86,7 +72,7 @@ Behavior 发现灾民并广播位置(v){
 		img = takePicture() ;
 		/* 调用 CnnRecognize动作，获得图片识别的结果 */
 		result = CnnRecognize(img) ;
-		if(result == True){
+		if(result == True) {
 			/* 当识别到灾民时，执行下述语句 */
 			/* 获取当前位置 tarLoc ，作为灾民的位置 */
 			tarLoc = getGPS() ;
@@ -101,10 +87,10 @@ Behavior 发现灾民并广播位置(v){
 }
 
 Behavior 到达目标点(dest){
-	@init {}
+	@init { }
 	@goal {
 		/* 停止条件为，当前位置与目标位置相同 */
-		getGPS() == dest ;
+		$ getGPS() == dest
     }
 	@routine {
 		/* 调用 flyTo动作 */
@@ -112,79 +98,72 @@ Behavior 到达目标点(dest){
     }
 }
 
-Behavior 前往解救一个灾民(v){
-	@init {
-		/* 初始化，结束信号为 False */
-		finishFlag = "False";
-	}
-	@goal { 
-		/* 停止条件为，结束信号为 True */
-		finishFlag == "True" ;
-    }
+Behavior 前往解救一个灾民(){
+	@init { }
+	@goal { }
 	@routine {
 		/* 阻塞订阅单播话题 targetLocation */
 		/* 单播话题有 waiting queue ，只有一个订阅者在阻塞等待消息 */
 		/* 其他订阅者位于等待队列中，待唯一的订阅者取消订阅后，自动从waiting queue头部依次订阅该话题 */
-		subscribe tarLoc from <<targetLocation>> {
+		subscribe tarLoc from <targetLocation> {
 			/* 唯一的订阅者取消订阅，自动从waiting queue头部弹出一个等待者，作为新的唯一订阅者 */
-			unsubscribe <<targetLocation>> ;
+			unsubscribe <targetLocation> ;
 			到达目标点(tarLoc) ;					 /* 调用 Behavior */
 			pickUp() ;								/* 调用 Action */
 			returnToHome() ;						/* 调用 Action */
 			get rescuedCnt from #rescuedCount# ;	/* 更新 rescuedCnt，表示已解救的灾民数加一 */
 			rescuedCnt = rescuedCnt + 1 ;
 			put rescuedCnt to #rescuedCount# ;
-			finishFlag = "True" ;					/* 更新结束信号 */
 		}
     }
 }
 
 Task 搜寻灾民({ groupC[C_start ~ C_end] }, u){
 	@init {
-		/* 初始化，已找到的灾民数为0，发布到 searchedCount痕迹 中 */
+		/* 初始化，已找到的灾民数为0，发布到 searchedCount共识 中 */
 		searchedCnt = 0;
 		put searchedCnt to #searchedCount#;
 	}
 	@goal {	
 		/* 目标：找到u个灾民 */
 		get searchedCnt from #searchedCount#;
-		searchedCnt == u;
+		$ searchedCnt == u
 	}
 	@routine {
 		/* each 多线程调度单机行为，执行完行为的无人机放回each队列中 */
-		/* 从0到t1号的 tpA 类无人机，并行执行 each中的语句块 */
-		each tpA[0~t1] {
+		/* 从C_start ~ C_end号的 groupC 类无人机，并行执行 each中的语句块 */
+		each groupC[C_start ~ C_end] {
 			发现灾民并广播位置(u);			/* 调用 Behavior */
 		}
 	}
 }
 
-Task 解救灾民({ groupD[D_start ~ D_end] }, u) {
-	@init {}
+Task 解救灾民({ groupD[D_start ~ D_end] }, w) {
+	@init { }
 	@goal {
-		/* 目标：解救u个灾民 */
+		/* 目标：解救w个灾民 */
 		get rescuedCnt from #rescuedCount#;
-		rescuedCnt == u;
+		$ rescuedCnt == w
 	}
 	@routine {
 		/* order 依次调度单机行为，执行完行为的无人机放回order队列中 */
 		/* 从0到t2号的 tpB 类无人机，依次执行 order中的语句块 */
 		order groupD[D_start ~ D_end] {
-			前往解救一个灾民(u);			/* 调用 Behavior */
+			前往解救一个灾民();			/* 调用 Behavior */
 		}
 	}
 }
 
 Task 地震救灾({ groupA[A_start ~ A_end], groupB[B_start ~ B_end] }, s) {
 	@init{
-		/* 初始化，已解救的灾民数为0，发布到 rescuedCount痕迹 中 */
+		/* 初始化，已解救的灾民数为0，发布到 rescuedCount共识 中 */
 		rescuedCnt = 0 ;
 		put rescuedCnt to #rescuedCount# ;
 	}
 	@goal{
 		/* 目标：解救n个人 */
 		get rescuedCnt from #rescuedCount# ;
-		rescuedCnt == s ;
+		$ rescuedCnt == s
 	}
 	@routine{
 		搜寻灾民( { groupA[A_start~A_end] }, s) ;		/* 并行子任务 */
