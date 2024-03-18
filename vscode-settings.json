@@ -63,7 +63,7 @@
                 }
             ]
         },
-        "(Action|Behavior|Task|Main|Agent|Port|\\|\\|)": { 
+        "\\b(Action|Behavior|Task|Main|Agent|Port|\\|\\|)\\b": { 
             "filterFileRegex": ".*\\.swarm",
             "decorations": [ 
                 {
@@ -106,7 +106,7 @@
                 }
             ]
         },
-        "(each |order |if |else |publish |subscribe |unsubscribe |get |put |from |to |return |True|False)": { 
+        "\\b(each|order|if|else|publish|subscribe|unsubscribe|get|put|from|to|return|True|False)\\b": { 
             "filterFileRegex": ".*\\.swarm",
             "decorations": [ 
                 {
